@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.1" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Api\HelixERP.Shell.Api.csproj" />
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Application\HelixERP.Shell.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Infrastructure\HelixERP.Shell.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

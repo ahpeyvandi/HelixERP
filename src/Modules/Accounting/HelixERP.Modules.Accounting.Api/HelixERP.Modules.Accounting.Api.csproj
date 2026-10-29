@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\HelixERP.Modules.Accounting.Application\HelixERP.Modules.Accounting.Application.csproj" />
+    <ProjectReference Include="..\HelixERP.Modules.Accounting.Infrastructure\HelixERP.Modules.Accounting.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

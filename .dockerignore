@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+.git/
+.gitignore
+.vs/
+.idea/
+TestResults/
+coverage/
+artifacts/
+
+# Never send local secrets or persistent data into an image build context
+docker/.env
+volumes/
+
+# Node
+node_modules/
+dist/

@@ -1,0 +1,59 @@
+# HelixERP infrastructure.
+# SQL Server is a LOCAL installation (Docker images are not reachable in this environment).
+# Data safety: Redis and file/log paths use fixed-name named volumes.
+# Never run `docker compose down -v`: it deletes the volumes.
+# Updating a service replaces only its image/container; the volumes below stay intact.
+
+name: helixerp
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: helixerp-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    volumes:
+      - erp_redis_data:/data
+    networks:
+      - erp-backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # Creates the file/log volumes with the ownership expected by the .NET app user
+  # and guarantees the volumes exist even before the first module container is added.
+  volume-init:
+    image: alpine:3.20
+    container_name: helixerp-volume-init
+    restart: "no"
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /data/files /data/logs && chown -R 1654:1654 /data/files /data/logs && chmod 750 /data/files /data/logs",
+      ]
+    volumes:
+      - erp_files:/data/files
+      - erp_logs:/data/logs
+    networks:
+      - erp-backend
+
+networks:
+  erp-backend:
+    name: helixerp-backend
+    driver: bridge
+
+volumes:
+  erp_redis_data:
+    name: erp_redis_data
+  erp_files:
+    name: erp_files
+  erp_logs:
+    name: erp_logs

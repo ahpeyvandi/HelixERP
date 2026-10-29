@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+coverage/
+artifacts/
+
+# IDE
+.idea/
+*.swp
+
+# Environment / secrets
+.env
+*.local.json
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Persistent volume data (containers write through named volumes, not bind mounts)
+volumes/**
+!volumes/**/
+!volumes/**/.gitkeep
+
+# OS
+Thumbs.db
+.DS_Store

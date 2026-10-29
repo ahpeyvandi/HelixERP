@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Api\HelixERP.Modules.Sales.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Infrastructure\HelixERP.Modules.Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Domain\HelixERP.Modules.Sales.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Shared\HelixERP.BuildingBlocks.Shared.csproj" />
+  </ItemGroup>
+</Project>

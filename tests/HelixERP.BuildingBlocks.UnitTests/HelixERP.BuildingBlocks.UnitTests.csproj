@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Moq" Version="4.20.70" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Domain\HelixERP.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Shared\HelixERP.BuildingBlocks.Shared.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Application\HelixERP.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Infrastructure\HelixERP.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

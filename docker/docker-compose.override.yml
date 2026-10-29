@@ -1,0 +1,8 @@
+# Local development overrides. Automatically merged by `docker compose` when this
+# file sits next to docker-compose.yml. Production deployments should not use it.
+# SQL Server is a local installation, so only Redis is published here.
+
+services:
+  redis:
+    ports:
+      - "6379:6379"

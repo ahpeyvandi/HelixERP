@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HelixERP.Shell.Application\HelixERP.Shell.Application.csproj" />
+    <ProjectReference Include="..\HelixERP.Shell.Infrastructure\HelixERP.Shell.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Domain\HelixERP.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Shared\HelixERP.BuildingBlocks.Shared.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Application\HelixERP.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\HelixERP.BuildingBlocks.Infrastructure\HelixERP.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Application\HelixERP.Shell.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Infrastructure\HelixERP.Shell.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shell\HelixERP.Shell.Api\HelixERP.Shell.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Domain\HelixERP.Modules.Sales.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Application\HelixERP.Modules.Sales.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Infrastructure\HelixERP.Modules.Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Sales\HelixERP.Modules.Sales.Api\HelixERP.Modules.Sales.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\HelixERP.Modules.Inventory.Domain\HelixERP.Modules.Inventory.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\HelixERP.Modules.Inventory.Application\HelixERP.Modules.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\HelixERP.Modules.Inventory.Infrastructure\HelixERP.Modules.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\HelixERP.Modules.Inventory.Api\HelixERP.Modules.Inventory.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Accounting\HelixERP.Modules.Accounting.Domain\HelixERP.Modules.Accounting.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Accounting\HelixERP.Modules.Accounting.Application\HelixERP.Modules.Accounting.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Accounting\HelixERP.Modules.Accounting.Infrastructure\HelixERP.Modules.Accounting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Accounting\HelixERP.Modules.Accounting.Api\HelixERP.Modules.Accounting.Api.csproj" />
+  </ItemGroup>
+</Project>
