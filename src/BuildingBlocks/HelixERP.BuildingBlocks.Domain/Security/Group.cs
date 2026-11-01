@@ -94,6 +94,9 @@ public sealed class Group : AggregateRoot<Guid>
         return value;
     }
 
+    public static bool IsValidName(string? name)
+        => !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name.Trim().ToLowerInvariant());
+
     private void GuardParent(Guid? parentId)
     {
         Guard.Against(parentId == Id, "A group cannot be its own parent.");

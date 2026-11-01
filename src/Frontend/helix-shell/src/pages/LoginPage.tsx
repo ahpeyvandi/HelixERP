@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { BrandMark } from '../components/BrandMark';
 import {
@@ -12,7 +12,8 @@ import {
   SunIcon,
   UserIcon
 } from '../components/icons';
-import { ApiError } from '../lib/auth/authApi';
+import { ApiError, createAuthApi } from '../lib/auth/authApi';
+import type { AuthMethods } from '../lib/auth/types';
 
 interface LoginPageProps {
   isDark: boolean;
@@ -48,6 +49,36 @@ export function LoginPage({ isDark, onToggleTheme }: LoginPageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [methods, setMethods] = useState<AuthMethods | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    createAuthApi()
+      .methods()
+      .then((result) => {
+        if (!cancelled) {
+          setMethods(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMethods({
+            localEnabled: true,
+            ldapEnabled: false,
+            oidcEnabled: false
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function startExternalLogin() {
+    window.location.assign('/api/auth/oidc/login');
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -250,6 +281,23 @@ export function LoginPage({ isDark, onToggleTheme }: LoginPageProps) {
                 </>
               )}
             </button>
+
+            {methods?.oidcEnabled && (
+              <>
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">یا</span>
+                  <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+                </div>
+                <button
+                  type="button"
+                  onClick={startExternalLogin}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                >
+                  ورود با IdentityServer
+                </button>
+              </>
+            )}
           </form>
 
           <div className="mt-6 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 text-[11px] text-slate-400 dark:border-white/5 dark:text-slate-500">

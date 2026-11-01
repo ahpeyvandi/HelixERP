@@ -26,3 +26,10 @@ export interface Credentials {
   login: string;
   password: string;
 }
+
+export interface AuthMethods {
+  localEnabled: boolean;
+  ldapEnabled: boolean;
+  oidcEnabled: boolean;
+  oidcAuthority?: string | null;
+}

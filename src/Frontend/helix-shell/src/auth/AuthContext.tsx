@@ -52,6 +52,7 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
   const refreshTimer = useRef<number | null>(null);
   const refreshPromise = useRef<Promise<StoredSession | null> | null>(null);
   const bootstrapped = useRef(false);
+  const sessionVersion = useRef(0);
   const apiRef = useRef<AuthApi>(api ?? createAuthApi());
   const refreshRef = useRef<() => Promise<StoredSession | null>>(async () => null);
 
@@ -89,7 +90,11 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
   );
 
   const applySession = useCallback(
-    (next: StoredSession | null) => {
+    (next: StoredSession | null, expectedVersion = sessionVersion.current) => {
+      if (expectedVersion !== sessionVersion.current) {
+        return false;
+      }
+
       sessionRef.current = next;
       setSession(next);
       setStatus(next ? 'authenticated' : 'anonymous');
@@ -101,6 +106,7 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
       }
 
       schedule(next);
+      return true;
     },
     [schedule]
   );
@@ -120,9 +126,16 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
       return null;
     }
 
-    const task = (async () => {
+    const requestVersion = sessionVersion.current;
+    const requestRefreshToken = current.tokens.refreshToken;
+
+    const task: Promise<StoredSession | null> = Promise.resolve().then(async () => {
       try {
-        const result = await apiRef.current.refresh(current.tokens.refreshToken);
+        const result = await apiRef.current.refresh(requestRefreshToken);
+        if (requestVersion !== sessionVersion.current || sessionRef.current !== current) {
+          return null;
+        }
+
         const next: StoredSession = { ...result, remember: current.remember };
         applySession(next);
         return next;
@@ -137,11 +150,13 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
           void refreshRef.current();
         }, NETWORK_RETRY_MS);
 
-        return current;
+        return null;
       } finally {
-        refreshPromise.current = null;
+        if (refreshPromise.current === task) {
+          refreshPromise.current = null;
+        }
       }
-    })();
+    });
 
     refreshPromise.current = task;
     return task;
@@ -169,6 +184,7 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
 
     sessionRef.current = stored;
     setSession(stored);
+    const bootstrapVersion = sessionVersion.current;
 
     if (isRefreshTokenExpired(stored)) {
       applySession(null);
@@ -181,7 +197,10 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
       if (!isAccessTokenExpired(stored, ACCESS_TOKEN_SKEW_MS)) {
         try {
           const user = await apiRef.current.me(stored.tokens.accessToken);
-          applySession({ ...stored, user: { ...user, groups: user.groups ?? [] } });
+          applySession(
+            { ...stored, user: { ...user, groups: user.groups ?? [] } },
+            bootstrapVersion
+          );
           return;
         } catch (error) {
           if (!(error instanceof ApiError) || error.status !== 401) {
@@ -198,13 +217,18 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
 
   const login = useCallback(
     async ({ login: loginName, password, remember }: LoginOptions) => {
+      const requestVersion = sessionVersion.current;
       const result = await apiRef.current.login({ login: loginName, password });
-      applySession({ ...result, remember });
+      applySession({ ...result, remember }, requestVersion);
     },
     [applySession]
   );
 
   const logout = useCallback(async () => {
+    sessionVersion.current += 1;
+    refreshPromise.current = null;
+    clearRefreshTimer();
+
     const current = sessionRef.current;
     if (!current) {
       applySession(null);
@@ -227,7 +251,7 @@ export function AuthProvider({ children, api }: AuthProviderProps) {
     } finally {
       applySession(null);
     }
-  }, [applySession]);
+  }, [applySession, clearRefreshTimer]);
 
   const refresh = useCallback(async () => (await refreshRef.current()) !== null, []);
 

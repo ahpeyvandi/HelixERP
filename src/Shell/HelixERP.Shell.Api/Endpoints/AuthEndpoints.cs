@@ -1,7 +1,11 @@
+using System.Security.Claims;
 using HelixERP.BuildingBlocks.Application.Security;
 using HelixERP.BuildingBlocks.Shared.Abstractions;
 using HelixERP.Shell.Api.Gateway;
 using HelixERP.Shell.Application.Security;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
+using AuthOptions = HelixERP.Shell.Application.Security.AuthenticationOptions;
 
 namespace HelixERP.Shell.Api.Endpoints;
 
@@ -9,9 +13,40 @@ public sealed record RefreshTokenRequest(string RefreshToken);
 
 public static class AuthEndpoints
 {
+    public const string OidcScheme = "HelixOidc";
+
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/auth").WithTags("Auth");
+
+        group.MapGet("/methods", (IOptions<AuthOptions> options) =>
+            {
+                var authentication = options.Value;
+
+                return Results.Ok(new AuthMethodsResponse(
+                    authentication.LocalEnabled,
+                    authentication.LdapEnabled,
+                    authentication.OidcEnabled,
+                    authentication.Oidc.Authority));
+            })
+            .AllowAnonymous()
+            .WithName("AuthMethods");
+
+        group.MapGet("/oidc/login", (IOptions<AuthOptions> options) =>
+            {
+                var authentication = options.Value;
+
+                if (!authentication.OidcEnabled)
+                {
+                    return Results.NotFound(new { message = "OIDC authentication is not enabled." });
+                }
+
+                return Results.Challenge(
+                    new AuthenticationProperties { RedirectUri = authentication.Oidc.FrontendRedirectUri },
+                    [OidcScheme]);
+            })
+            .AllowAnonymous()
+            .WithName("OidcLogin");
 
         group.MapPost("/login", async (
                 LoginRequest request,

@@ -34,6 +34,10 @@ public sealed class RefreshToken : AggregateRoot<Guid>
 
     public string? ReplacedByTokenHash { get; private set; }
 
+    public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+
+    public bool IsRevoked => RevokedAtUtc is not null;
+
     public static RefreshToken Create(
         Guid userId,
         string tokenHash,

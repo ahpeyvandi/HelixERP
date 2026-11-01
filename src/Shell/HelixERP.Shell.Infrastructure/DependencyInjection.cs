@@ -43,6 +43,12 @@ public static class DependencyInjection
         jwtOptions.Validate();
         services.AddSingleton<IOptions<JwtOptions>>(Options.Create(jwtOptions));
 
+        var authenticationOptions =
+            configuration.GetSection(AuthenticationOptions.SectionName).Get<AuthenticationOptions>()
+            ?? new AuthenticationOptions();
+        authenticationOptions.Validate();
+        services.AddSingleton<IOptions<AuthenticationOptions>>(Options.Create(authenticationOptions));
+
         var bootstrapOptions = configuration.GetSection(BootstrapOptions.SectionName).Get<BootstrapOptions>()
             ?? new BootstrapOptions();
         services.AddSingleton<IOptions<BootstrapOptions>>(Options.Create(bootstrapOptions));

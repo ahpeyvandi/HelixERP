@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ApiError } from '../lib/auth/authApi';
-import { saveSession, SESSION_STORAGE_KEY } from '../lib/auth/sessionStore';
+import { saveSession, SESSION_STORAGE_KEY, clearSession } from '../lib/auth/sessionStore';
 import type { AuthApi } from '../lib/auth/authApi';
-import type { AuthResult, StoredSession } from '../lib/auth/types';
+import type { AuthResult, AuthUser, StoredSession } from '../lib/auth/types';
 
 function futureIso(offsetMs: number): string {
   return new Date(Date.now() + offsetMs).toISOString();
@@ -176,5 +176,73 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('authenticated'));
     expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).not.toBeNull();
+  });
+
+  it('does not report a network-refresh failure as success nor issue the expired token', async () => {
+    let refreshResolve: () => void = () => undefined;
+    const refresh = vi.fn(
+      () =>
+        new Promise<AuthResult>((_resolve, reject) => {
+          refreshResolve = () => reject(new ApiError(0, 'NetworkError'));
+        })
+    );
+    const api = createFakeApi({ refresh });
+    saveSession(
+      makeSession({
+        tokens: { ...RESULT.tokens, accessTokenExpiresAtUtc: futureIso(-60_000) }
+      })
+    );
+
+    let tokenReturned = false;
+    function GetTokenProbe() {
+      const { getAccessToken } = useAuth();
+      return (
+        <button
+          type="button"
+          data-testid="get-token"
+          onClick={() => {
+            void getAccessToken().then((token) => {
+              tokenReturned = token !== null;
+            });
+          }}
+        >
+          token
+        </button>
+      );
+    }
+
+    render(
+      <AuthProvider api={api}>
+        <GetTokenProbe />
+      </AuthProvider>
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'token' }));
+    refreshResolve();
+    await waitFor(() => expect(tokenReturned).toBe(false));
+  });
+
+  it('ignores a late /me response arriving after logout', async () => {
+    clearSession();
+    let meResolve: ((user: AuthUser) => void) | undefined;
+    const me = vi.fn(
+      () =>
+        new Promise<AuthUser>((resolve) => {
+          meResolve = resolve;
+        })
+    );
+    saveSession(makeSession());
+    const api = createFakeApi({ me });
+
+    renderProvider(api);
+
+    await userEvent.click(screen.getByRole('button', { name: 'do-logout' }));
+    await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('anonymous'));
+    expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
+
+    meResolve?.({ ...RESULT.user, displayName: 'دیررس' });
+
+    await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('anonymous'));
+    expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
   });
 });

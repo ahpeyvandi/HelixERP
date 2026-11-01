@@ -172,6 +172,37 @@ namespace HelixERP.Shell.Infrastructure.Persistence.Migrations
                     b.ToTable("AccessRights", (string)null);
                 });
 
+            modelBuilder.Entity("HelixERP.BuildingBlocks.Domain.Security.ExternalLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Provider", "Subject")
+                        .IsUnique();
+
+                    b.ToTable("ExternalLogins", (string)null);
+                });
+
             modelBuilder.Entity("HelixERP.BuildingBlocks.Domain.Security.Group", b =>
                 {
                     b.Property<Guid>("Id")
@@ -286,6 +317,11 @@ namespace HelixERP.Shell.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -390,6 +426,15 @@ namespace HelixERP.Shell.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HelixERP.BuildingBlocks.Domain.Security.ExternalLogin", b =>
+                {
+                    b.HasOne("HelixERP.BuildingBlocks.Domain.Security.User", null)
+                        .WithMany("ExternalLogins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HelixERP.BuildingBlocks.Domain.Security.Group", b =>
                 {
                     b.HasOne("HelixERP.BuildingBlocks.Domain.Security.Group", null)
@@ -432,6 +477,7 @@ namespace HelixERP.Shell.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("HelixERP.BuildingBlocks.Domain.Security.User", b =>
                 {
+                    b.Navigation("ExternalLogins");
                     b.Navigation("Memberships");
                 });
 #pragma warning restore 612, 618

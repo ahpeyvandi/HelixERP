@@ -8,8 +8,7 @@ using HelixERP.BuildingBlocks.Application.Storage;
 namespace HelixERP.Shell.IntegrationTests;
 
 public sealed class FileEndpointTests
-{
-    [Fact]
+{    [Fact]
     public async Task Upload_download_list_and_delete_round_trip()
     {
         using var factory = new ShellApiFactory();
@@ -79,5 +78,59 @@ public sealed class FileEndpointTests
         var response = await client.GetAsync($"/api/files/{Guid.NewGuid()}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Other_user_cannot_download_or_delete_a_file_and_does_not_see_it_in_listing()
+    {
+        using var factory = new ShellApiFactory();
+        await factory.CreateInternalUserAsync("owner01", "Owner@12345");
+        await factory.CreateInternalUserAsync("other01", "Other@12345");
+
+        var ownerClient = factory.CreateClient();
+        var ownerAuth = await IntegrationTestHelpers.LoginAsync(ownerClient, "owner01", "Owner@12345");
+        ownerClient.WithBearerToken(ownerAuth.Tokens.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        var filePart = new ByteArrayContent(Encoding.UTF8.GetBytes("owned content"));
+        filePart.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        form.Add(filePart, "file", "private.txt");
+        var upload = await ownerClient.PostAsync("/api/files", form);
+        var metadata = await upload.Content.ReadFromJsonAsync<FileMetadataDto>();
+
+        var otherClient = factory.CreateClient();
+        var otherAuth = await IntegrationTestHelpers.LoginAsync(otherClient, "other01", "Other@12345");
+        otherClient.WithBearerToken(otherAuth.Tokens.AccessToken);
+
+        (await otherClient.GetAsync($"/api/files/{metadata!.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await otherClient.DeleteAsync($"/api/files/{metadata!.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var list = await otherClient.GetFromJsonAsync<List<FileMetadataDto>>("/api/files");
+        list.Should().NotContain(entry => entry.Id == metadata.Id);
+
+        (await ownerClient.GetAsync($"/api/files/{metadata!.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Regular_user_lists_only_their_own_files()
+    {
+        using var factory = new ShellApiFactory();
+        await factory.CreateInternalUserAsync("lister01", "Lister@12345");
+
+        var client = factory.CreateClient();
+        var auth = await IntegrationTestHelpers.LoginAsync(client, "lister01", "Lister@12345");
+        client.WithBearerToken(auth.Tokens.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("mine")), "file", "mine.txt");
+        var upload = await client.PostAsync("/api/files", form);
+        var mine = await upload.Content.ReadFromJsonAsync<FileMetadataDto>();
+
+        var list = await client.GetFromJsonAsync<List<FileMetadataDto>>("/api/files");
+
+        list.Should().ContainSingle(entry => entry.Id == mine!.Id);
     }
 }

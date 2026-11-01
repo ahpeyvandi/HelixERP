@@ -5,6 +5,7 @@ using HelixERP.BuildingBlocks.Domain.Platform;
 using HelixERP.BuildingBlocks.Shared.Abstractions;
 using HelixERP.Shell.Application.Storage;
 using HelixERP.Shell.Infrastructure.Persistence;
+using HelixERP.Shell.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,6 +14,8 @@ namespace HelixERP.Shell.Infrastructure.Storage;
 
 public sealed class LocalFileStorage : IFileStorage
 {
+    public const string PlatformAdminGroup = "base.group_system";
+
     private static readonly Regex ExtensionPattern = new(
         @"^\.[A-Za-z0-9]{1,10}$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -124,6 +127,12 @@ public sealed class LocalFileStorage : IFileStorage
             return null;
         }
 
+        if (!await IsOwnerOrAdminAsync(attachment, cancellationToken))
+        {
+            throw new UnauthorizedAccessException(
+                "This file belongs to another user and you are not an administrator.");
+        }
+
         var fullPath = ResolvePath(attachment.StorageKey);
 
         if (!File.Exists(fullPath))
@@ -159,6 +168,16 @@ public sealed class LocalFileStorage : IFileStorage
     {
         var query = _dbContext.Files.AsNoTracking().Where(file => !file.IsDeleted);
 
+        if (!await IsOwnerOrAdminAsync(null, cancellationToken))
+        {
+            if (_currentUser.UserId is not { } currentUserId)
+            {
+                return [];
+            }
+
+            query = query.Where(file => file.UploadedByUserId == currentUserId);
+        }
+
         if (!string.IsNullOrWhiteSpace(relatedEntity))
         {
             var entity = relatedEntity.Trim();
@@ -186,6 +205,12 @@ public sealed class LocalFileStorage : IFileStorage
         if (attachment is null)
         {
             return false;
+        }
+
+        if (!await IsOwnerOrAdminAsync(attachment, cancellationToken))
+        {
+            throw new UnauthorizedAccessException(
+                "This file belongs to another user and you are not an administrator.");
         }
 
         attachment.MarkDeleted(_clock.UtcNow);
@@ -229,6 +254,32 @@ public sealed class LocalFileStorage : IFileStorage
         await target.FlushAsync(cancellationToken);
 
         return total;
+    }
+
+    private async Task<bool> IsOwnerOrAdminAsync(
+        FileAttachment? attachment,
+        CancellationToken cancellationToken)
+    {
+        if (_currentUser.IsSuperUser)
+        {
+            return true;
+        }
+
+        if (attachment is not null &&
+            _currentUser.UserId is not null &&
+            attachment.UploadedByUserId == _currentUser.UserId)
+        {
+            return true;
+        }
+
+        if (_currentUser.UserId is not { } userId)
+        {
+            return false;
+        }
+
+        var groups = await GroupResolver.ResolveForUserAsync(_dbContext, userId, cancellationToken);
+
+        return groups.GroupNames.Contains(PlatformAdminGroup, StringComparer.Ordinal);
     }
 
     private string BuildStorageKey(string fileName)

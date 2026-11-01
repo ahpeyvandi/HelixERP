@@ -11,6 +11,7 @@ public sealed class User : AggregateRoot<Guid>
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private readonly List<UserGroup> _memberships = [];
+    private readonly List<ExternalLogin> _externalLogins = [];
 
     private User()
     {
@@ -56,6 +57,8 @@ public sealed class User : AggregateRoot<Guid>
     public DateTime? LastLoginAtUtc { get; private set; }
 
     public ICollection<UserGroup> Memberships => _memberships;
+
+    public IReadOnlyCollection<ExternalLogin> ExternalLogins => _externalLogins;
 
     public static User Create(
         string login,
@@ -125,6 +128,28 @@ public sealed class User : AggregateRoot<Guid>
     public void GrantSuperUser() => IsSuperUser = true;
 
     public void RevokeSuperUser() => IsSuperUser = false;
+
+    public void LinkExternalLogin(ExternalLogin externalLogin)
+    {
+        ArgumentNullException.ThrowIfNull(externalLogin);
+
+        if (_externalLogins.Any(login =>
+                login.Provider == externalLogin.Provider && login.Subject == externalLogin.Subject))
+        {
+            return;
+        }
+
+        _externalLogins.Add(externalLogin);
+    }
+
+    public bool UnlinkExternalLogin(string provider, string subject)
+    {
+        var providerValue = ExternalLogin.NormalizeProvider(provider);
+        var subjectValue = ExternalLogin.NormalizeSubject(subject);
+
+        return _externalLogins.RemoveAll(login =>
+            login.Provider == providerValue && login.Subject == subjectValue) > 0;
+    }
 
     public static string NormalizeLogin(string login)
     {

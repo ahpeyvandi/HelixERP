@@ -37,13 +37,34 @@ services:
       [
         "sh",
         "-c",
-        "mkdir -p /data/files /data/logs && chown -R 1654:1654 /data/files /data/logs && chmod 750 /data/files /data/logs",
+        "mkdir -p /data/files /data/logs /data/ids && chown -R 1654:1654 /data/files /data/logs /data/ids && chmod 750 /data/files /data/logs /data/ids",
       ]
     volumes:
       - erp_files:/data/files
       - erp_logs:/data/logs
+      - erp_ids:/data/ids
     networks:
       - erp-backend
+
+  identityserver:
+    build:
+      context: ..
+      dockerfile: docker/modules/ids.Dockerfile
+    container_name: helixerp-identityserver
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - IdentityServer__IssuerUri=http://identityserver:8080
+      - IdentityServer__SigningKeyFile=/var/helix/ids/helix-ids-signing-key.rsa
+    volumes:
+      - erp_ids:/var/helix/ids
+    networks:
+      - erp-backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/.well-known/openid-configuration"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 networks:
   erp-backend:
@@ -57,3 +78,5 @@ volumes:
     name: erp_files
   erp_logs:
     name: erp_logs
+  erp_ids:
+    name: erp_ids

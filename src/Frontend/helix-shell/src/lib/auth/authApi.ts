@@ -1,4 +1,4 @@
-import type { AuthResult, AuthUser, Credentials } from './types';
+import type { AuthMethods, AuthResult, AuthUser, Credentials } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -73,6 +73,10 @@ export function createAuthApi(options: AuthApiOptions = {}) {
   }
 
   return {
+    methods(): Promise<AuthMethods> {
+      return send<AuthMethods>('/api/auth/methods', { method: 'GET' }, false);
+    },
+
     login(credentials: Credentials): Promise<AuthResult> {
       return send<AuthResult>('/api/auth/login', {
         method: 'POST',

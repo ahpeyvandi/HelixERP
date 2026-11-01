@@ -33,6 +33,14 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Metadata.FindNavigation(nameof(User.Memberships))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasMany(user => user.ExternalLogins)
+            .WithOne()
+            .HasForeignKey(login => login.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Metadata.FindNavigation(nameof(User.ExternalLogins))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Property<byte[]>("RowVersion").IsRowVersion().IsConcurrencyToken();
     }
 }

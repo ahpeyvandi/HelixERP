@@ -34,5 +34,7 @@ public sealed class ShellDbContext : HelixDbContext
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
     public DbSet<FileAttachment> Files => Set<FileAttachment>();
 }

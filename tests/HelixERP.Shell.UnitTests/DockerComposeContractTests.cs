@@ -9,20 +9,35 @@ public sealed class DockerComposeContractTests
     [
         "erp_files",
         "erp_redis_data",
-        "erp_logs"
+        "erp_logs",
+        "erp_ids"
     ];
 
     [Fact]
-    public void Compose_defines_redis_and_volume_init_services()
+    public void Compose_defines_redis_volume_init_and_identityserver_services()
     {
         var compose = LoadCompose();
         var services = Map(compose["services"]);
 
-        services.Keys.Should().Contain(["redis", "volume-init"]);
+        services.Keys.Should().Contain(["redis", "volume-init", "identityserver"]);
 
         Map(services["redis"])["image"].Should().Be("redis:7.4-alpine");
         Map(services["redis"])["restart"].Should().Be("unless-stopped");
         Map(services["volume-init"])["restart"].Should().Be("no");
+    }
+
+    [Fact]
+    public void Identityserver_service_builds_from_the_ids_dockerfile()
+    {
+        var compose = LoadCompose();
+        var services = Map(compose["services"]);
+        var identityServer = Map(services["identityserver"]);
+
+        var build = Map(identityServer["build"]);
+        build["context"].Should().Be("..");
+        build["dockerfile"].Should().Be("docker/modules/ids.Dockerfile");
+
+        Sequence(identityServer["volumes"]).Should().Contain("erp_ids:/var/helix/ids");
     }
 
     [Fact]
@@ -72,6 +87,7 @@ public sealed class DockerComposeContractTests
         var volumes = Sequence(volumeInit["volumes"]).Cast<string>().ToList();
         volumes.Should().Contain("erp_files:/data/files");
         volumes.Should().Contain("erp_logs:/data/logs");
+        volumes.Should().Contain("erp_ids:/data/ids");
     }
 
     [Fact]
@@ -116,11 +132,11 @@ public sealed class DockerComposeContractTests
     }
 
     [Fact]
-    public void Module_dockerfiles_exist_for_shell_and_all_modules()
+    public void Module_dockerfiles_exist_for_shell_all_modules_and_identityserver()
     {
         var modulesDirectory = Path.Combine(RepositoryRoot(), "docker", "modules");
 
-        foreach (var dockerfile in new[] { "shell.Dockerfile", "sales.Dockerfile", "inventory.Dockerfile", "accounting.Dockerfile" })
+        foreach (var dockerfile in new[] { "shell.Dockerfile", "sales.Dockerfile", "inventory.Dockerfile", "accounting.Dockerfile", "ids.Dockerfile" })
         {
             File.Exists(Path.Combine(modulesDirectory, dockerfile)).Should().BeTrue();
         }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using HelixERP.Shell.Application.Security;
 
 namespace HelixERP.Shell.IntegrationTests;
 
@@ -67,6 +68,46 @@ public sealed class AuthEndpointTests
             new { refreshToken = auth.Tokens.RefreshToken });
 
         reuse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Refresh_token_reuse_revokes_the_whole_session_family()
+    {
+        using var factory = new ShellApiFactory();
+        using var client = factory.CreateClient();
+
+        var auth = await IntegrationTestHelpers.LoginAsync(client, factory.AdminLogin, factory.AdminPassword);
+
+        var firstRefresh = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = auth.Tokens.RefreshToken });
+        firstRefresh.EnsureSuccessStatusCode();
+        var first = await firstRefresh.Content.ReadFromJsonAsync<HelixERP.Shell.Application.Security.AuthResult>();
+
+        var secondRefresh = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = auth.Tokens.RefreshToken });
+        secondRefresh.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var familyToken = first!.Tokens.RefreshToken;
+        var afterReuse = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = familyToken });
+
+        afterReuse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Methods_endpoint_reports_available_login_methods()
+    {
+        using var factory = new ShellApiFactory();
+        using var client = factory.CreateClient();
+
+        var methods = await client.GetFromJsonAsync<AuthMethodsResponse>("/api/auth/methods");
+
+        methods.Should().NotBeNull();
+        methods!.LocalEnabled.Should().BeTrue();
+        methods.LdapEnabled.Should().BeFalse();
     }
 
     [Fact]

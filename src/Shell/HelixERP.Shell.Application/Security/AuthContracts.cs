@@ -9,6 +9,19 @@ public sealed record AuthUserInfo(
     bool IsSuperUser,
     IReadOnlyCollection<string> Groups);
 
+public sealed record AuthMethodsResponse(
+    bool LocalEnabled,
+    bool LdapEnabled,
+    bool OidcEnabled,
+    string? OidcAuthority);
+
+public sealed record ExternalLoginAttempt(
+    string Provider,
+    string Subject,
+    string? DisplayName,
+    string? Email,
+    IReadOnlyCollection<string> GroupClaims);
+
 public sealed record AuthTokens(
     string AccessToken,
     DateTime AccessTokenExpiresAtUtc,
@@ -39,6 +52,10 @@ public interface ITokenService
 public interface IAuthService
 {
     Task<AuthResult?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
+
+    Task<AuthResult?> LoginWithExternalIdentityAsync(
+        ExternalLoginAttempt attempt,
+        CancellationToken cancellationToken = default);
 
     Task<AuthResult?> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
 

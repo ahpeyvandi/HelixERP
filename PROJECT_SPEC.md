@@ -82,6 +82,9 @@ HelixERP/
 │   │   ├── HelixERP.BuildingBlocks.Infrastructure
 │   │   └── HelixERP.BuildingBlocks.Shared
 │   │
+│   ├── Ids/
+│   │   └── HelixERP.IdentityServer.Api           # Duende IdentityServer 7 (separate container)
+│   │
 │   ├── Modules/
 │   │   ├── Sales/
 │   │   │   ├── HelixERP.Modules.Sales.Domain
@@ -117,6 +120,7 @@ HelixERP/
 │   ├── docker-compose.override.yml
 │   └── modules/
 │       ├── shell.Dockerfile
+│       ├── ids.Dockerfile
 │       ├── sales.Dockerfile
 │       ├── inventory.Dockerfile
 │       └── accounting.Dockerfile
@@ -124,6 +128,7 @@ HelixERP/
 ├── volumes/                               # Persistent data
 │   ├── files/                             # Physical files & images
 │   ├── redis/
+│   ├── ids/                               # IdentityServer signing key
 │   └── logs/
 │
 ├── docs/
@@ -151,6 +156,26 @@ Named volumes that must **never** be deleted on update:
 | `erp_logs`            | Application logs                |
 
 When updating a module → only the Docker image is replaced. All volumes stay intact.
+
+---
+
+## 6.1 Authentication Methods
+
+HelixERP supports multiple login methods, selectable via configuration (`Authentication` section):
+
+| Method            | Description                                                        |
+|-------------------|--------------------------------------------------------------------|
+| Local             | Default credential-based login against the internal user store     |
+| LDAP / ActiveDir  | Username/password against an LDAP/AD server (config stub present)   |
+| IdentityServer    | OpenID Connect code flow against the separate Duende IdentityServer |
+|                   | container (`helix-ids`); external identity is mapped to internal    |
+|                   | Users/Groups via `ExternalLogin` (Provider + Subject)               |
+
+- `GET /api/auth/methods` reports which methods are enabled.
+- `GET /api/auth/oidc/login` initiates the OIDC challenge; the callback exchanges the
+  external identity for an internal JWT + refresh token (auto-provision + group mapping).
+- The IdentityServer 7 container runs from `src/Ids/HelixERP.IdentityServer.Api` with its
+  signing key on the `erp_ids` volume.
 
 ---
 

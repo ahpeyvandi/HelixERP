@@ -7,12 +7,14 @@ using HelixERP.Shell.Api.Auth;
 using HelixERP.Shell.Api.Endpoints;
 using HelixERP.Shell.Api.Gateway;
 using HelixERP.Shell.Api.Infrastructure;
+using HelixERP.Shell.Application.Bootstrap;
 using HelixERP.Shell.Application.Security;
 using HelixERP.Shell.Infrastructure;
 using HelixERP.Shell.Infrastructure.Bootstrap;
 using HelixERP.Shell.Infrastructure.Security;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Yarp.ReverseProxy.Configuration;
 
@@ -31,6 +33,10 @@ builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 jwtOptions.Validate();
+
+var bootstrapOptions = builder.Configuration.GetSection(BootstrapOptions.SectionName).Get<BootstrapOptions>() ?? new BootstrapOptions();
+
+ProductionSecurityGuard.Validate(builder.Environment.EnvironmentName, jwtOptions, bootstrapOptions);
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -51,6 +57,33 @@ builder.Services
             RoleClaimType = JwtTokenService.GroupClaim
         };
     });
+
+var authenticationOptions =
+    builder.Configuration.GetSection(AuthenticationOptions.SectionName).Get<AuthenticationOptions>()
+    ?? new AuthenticationOptions();
+
+if (authenticationOptions.OidcEnabled)
+{
+    builder.Services.AddAuthentication()
+        .AddOpenIdConnect(AuthEndpoints.OidcScheme, options =>
+        {
+            options.SignInScheme = null;
+            options.Authority = authenticationOptions.Oidc.Authority;
+            options.ClientId = authenticationOptions.Oidc.ClientId;
+            options.ClientSecret = authenticationOptions.Oidc.ClientSecret;
+            options.ResponseType = "code";
+            options.UsePkce = true;
+            options.SaveTokens = false;
+            options.GetClaimsFromUserInfoEndpoint = !string.IsNullOrWhiteSpace(authenticationOptions.Oidc.GroupClaim);
+
+            foreach (var scope in authenticationOptions.Oidc.GetScopes())
+            {
+                options.Scope.Add(scope);
+            }
+
+            options.Events.OnTicketReceived = OidcCallbackHandler.BuildTicketReceivedHandler();
+        });
+}
 
 builder.Services.AddAuthorization(options =>
 {

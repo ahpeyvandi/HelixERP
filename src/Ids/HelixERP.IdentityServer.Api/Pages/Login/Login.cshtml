@@ -1,0 +1,39 @@
+@page
+@model HelixERP.IdentityServer.Api.Pages.Login.LoginModel
+@{
+    ViewData["Title"] = "HelixERP IdentityServer - Login";
+}
+
+<div class="login-page">
+  <div class="login-card">
+    <h1>HelixERP IdentityServer</h1>
+    <p>Enter your credentials to continue.</p>
+
+    @if (ViewData["Error"] is not null)
+    {
+        <div class="alert alert-error">Invalid username or password.</div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+        <label for="Username">Username</label>
+        <input id="Username" name="Username" type="text" asp-for="Input.Username" />
+        <label for="Password">Password</label>
+        <input id="Password" name="Password" type="password" />
+
+        <button type="submit">Sign in</button>
+    </form>
+
+    <p class="hint">
+      Test user: alice / Alice@12345
+    </p>
+  </div>
+</div>
+
+@section Styles {
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .login-card { max-width: 22rem; margin: 4rem auto; }
+  </style>
+}
